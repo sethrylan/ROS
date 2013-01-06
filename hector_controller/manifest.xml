@@ -1,0 +1,20 @@
+<package>
+  <description brief="hector_controller">
+
+     hector_controller
+
+  </description>
+  <author>ros</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/hector_controller</url>
+  <depend package="std_msgs"/>
+  <depend package="rospy"/>
+  <depend package="roscpp"/>
+  <depend package="roslang"/>
+  <depend package="nav_msgs"/>
+  <depend package="geometry_msgs"/>
+
+</package>
+
+

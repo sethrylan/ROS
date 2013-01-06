@@ -1,0 +1,37 @@
+
+
+1. Set up VM Environment
+	Download Ubuntu 11.10 iso (32 bit).
+	Install Oracle VM Virtualbox
+	In Virtualbox, create a new Machine. Select Linux and Ubuntu as the OS type. Select 2048MB (or half of host system memory) as the default memory and (at least) 16GB as the HD storage. Select VMDK as the file type.
+	In Settings->Storage, select the IDE device and attach the ubuntu .iso file.
+	Start the VM and proceed through the Ubuntu installation steps.
+	In Settings->Storage, select the IDE device and remove the Ubuntu .iso file.
+	Restart the VM.
+
+2. Install Guest Additions. This gives you better pointer behaviour, screen resizing and copy-paste between host and VM.
+	Devices -> Install Guest Additions
+	Restart VM.
+
+3. Set up ROS Electric (Emys) environment
+	sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu oneiric main" > /etc/apt/sources.list.d/ros-latest.list'
+	wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
+	sudo apt-get update && sudo apt-get --assume-yes upgrade && sudo apt-get --assume-yes install ros-electric-desktop-full
+	sudo apt-get --assume-yes install python-setuptools python-pip && sudo easy_install -U rosinstall vcstools rosdep
+	mkdir ~/ros_workspace
+	echo "export ROS_PACKAGE_PATH=~/ros_workspace:\$ROS_PACKAGE_PATH" >> ~/.bashrc
+	echo "export ROS_WORKSPACE=~/ros_workspace" >> ~/.bashrc
+	#source line can be uncommented if you are not going to set up a ros workspace
+	#echo "source /opt/ros/electric/setup.bash" >> ~/.bashrc
+	.  ~/.bashrc
+
+4. Test environment with Turtle Sim
+	In separate terminals, run the following commands:
+	roscore
+	rosmake turtlesim && rosrun turtlesim turtlesim_node
+	rosrun turtlesim turtle_teleop_key
+	rxgraph
+
+
+
+

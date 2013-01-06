@@ -1,0 +1,129 @@
+[Prereqs: completed ROS Electric install guide]
+
+
+1. Initialize ROS Workspace (see http://www.ros.org/doc/api/rosinstall/html/rosws_tutorial.html)
+	source /opt/ros/electric/setup.bash
+	#rosws init ~/ros_workspace /opt/ros/electric
+	echo "source /home/ros/ros_workspace/setup.bash" >> ~/.bashrc
+	echo "export ROS_LOCATIONS=\"ros_workspace=~/ros_workspace:stacks=/opt/ros/electric/stacks\"" >> ~/.bashrc
+	# comment/remove the line 'source /opt/ros/electric/setup.bash' in ~/.bashrc
+	source ~/.bashrc
+	
+	#Note: must move "source /home/ros/ros_workspace/setup.bash"  line above other lines added to .bashrc
+	
+	
+	
+#########################
+2. Verify ROS Workspace:
+	rosws info
+
+	Output should be :
+workspace: /home/ros/ros_workspace
+ROS_ROOT: /opt/ros/electric/ros
+
+ Localname                S SCM  Version-Spec UID  (Spec) URI  (Spec) [https://...]
+ ---------                - ---- ------------ ----------- -------------------------
+ /opt/ros/electric/stacks                                 
+ /opt/ros/electric/ros                    
+ ###########################
+ 
+3. Install dependencies: pr2_common pr2_mechanism sbpl
+	
+	sudo apt-get update && sudo apt-get --assume-yes install ros-electric-pr2-common ros-electric-pr2-mechanism ros-electric-sbpl
+	
+???ros-electric-sbpl-dynamic-env
+
+
+
+=========== Manual Install Script if there are further errors =========== 
+
+# note: this script has not been tested
+
+set -o errexit
+set -o verbose
+
+# rosdep init will return error if it has been run before; comment out if you have already initialized your 
+sudo rosdep init
+
+for dep in "pr2_common" "pr2_mechanism" "sbpl" do
+
+  # if roscd returns an error message
+  if [ $(roscd $dep) ] ; then
+    # check out code
+    rosws set $dep \"$(roslocate uri $dep)\" --$(roslocate vcs $dep)
+    #update workspace
+    rosws update $dep
+    # re-source $ROS_WORKSPACE/setup.bash
+    source ~/.bashrc
+  
+    if [rosdep check $dep != 'All system dependencies have been satisfied' ] ; then 
+      echo "There was a missing dependency for $dep. Run \'rosdep check $dep\' to see results."
+      break
+    fi
+
+    rosdep update
+    rosdep install $dep
+    rosmake $dep
+  fi
+done
+
+
+============== END SCRIPT =================== 
+
+4. Install summit_sim
+
+  4.1 Checkout code
+	#roscd ros_workspace/
+	roscd
+	rosws set summit "http://summit-ros-stack.googlecode.com/svn/trunk/trunk/summit_sim" --svn
+	rosws update summit_sim 
+	source ~/.bashrc
+
+  4.2 Initialize Workspace
+	sudo rosdep init
+	#rosdep update
+
+  4.2 Build code 
+	rosdep install summit    # equivalent in previous ros versions to rosmake --rosdep-install)
+	#sed -i 's/electric/fuerte/g' ~/ros_workspace/summit_sim/summit_sbpl_nav/build/CMakeCache.txt
+	#find ~/ros_workspace/summit_sim -name "*" -exec sed -i "s/electric/fuerte/g" '{}' \;
+	roscd summit
+	rosmake summit
+
+5. IDE Install
+  5.1 Install Java 6 JDK
+	sudo apt-get --assume-yes install openjdk-6-jdk
+  5.2 Download and Install Netbeans 6.7.1 (http://www.netbeans.info/downloads/dev.php)
+	wget http://download.netbeans.org/netbeans/6.7.1/final/bundles/netbeans-6.7.1-ml-linux.sh && sudo netbeans-6.7.1-ml-linux.sh
+  2.3
+	Install Python plugins: Tools -> Plugins -> Select Python and JPython to be installed
+
+
+
+========================
+
+
+
+
+
+
+
+======== Notes (and things that didn't work) ======== 
+
+
+
+
+7. Set up a directory for source code builds:
+	in ~/.bashrc:
+		export ROS_PACKAGE_PATH=~/ros_workspace/stacks...
+	mkdir ~/ros_workspace/stacks
+	cd ~/ros_workspace/stacks
+	svn checkout http://summit-ros-stack.googlecode.com/svn/trunk/ summit-ros-stack-read-only
+	[ or to install only one package at a time: 
+	svn co http://summit-ros-stack.googlecode.com/svn/trunk/trunk/summit_sim/summit_description
+	or setup svn in NetBeans in Tools -> Options -> Miscellaneous -> Versioning -> Subversion]
+	
+
+
+"ROS stores groups of packages in stacks, and it stores the stacks wherever you want. ROS will search for packages and stacks that are listed in the ROS_PACKAGE_PATH environmental variable.
+

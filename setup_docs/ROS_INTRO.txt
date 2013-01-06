@@ -1,0 +1,154 @@
+
+##################################
+##################################
+#   ROS Introduction Course:
+##################################
+##################################
+ROS is an open-source, meta-operating system for robotic systems, including hardware abstraction, low-level device control, common automation functionality, messaging systems, package/workspace management, visualization tools, and distributed computing support.
+ # Description: An exploratory introduction to ROS, with a focus on concept & application exposure.
+ # Prereqs: Basic Linux
+ # Environment
+ ## Ubuntu 12.04 LTS (precise pangolin)
+ ## ROS Fuerte
+##################################
+##################################
+
+
+##################################
+### ROS Concepts
+##################################
+### Packages
+	# Manifest called manifest.xml, describes license data and dependencies
+	rospack list
+	rospack list | wc -l
+	rospack find asctec_autopilot 
+	rospack depends asctec_autopilot
+	rospack find rospack
+	rospack langs
+### Stacks
+	# Manifest called stack.xml, describes license data and dependencies
+	# Stacks provide aggregate functionality, like navigation
+	rosstack list | wc -l
+	rosstack contents asctec_drivers
+	rosstack depends asctec_drivers
+	rosstack depends-why --target=filters asctec_drivers
+### Node; subscribe/publish topics, provide/use services
+### Messages; 
+### Topics
+### Services
+### roscore : Master (name service) + rosout + parameter server
+### rosout = both a node and a topic
+### - we'll see a visual of this later
+	
+	roscore
+
+
+##################################
+### Workspace Management
+##################################
+# rosws manages a setup.bash and .rosinstall files for you; plus vcs integration
+	rosws remove starmac-ros-pkg
+	rm -rf starmac-ros-pkg
+rosws info starmac-ros-pkg
+#  STARMAC = Stanford Testbed Of Autonomous Rotorcraft For Multi Agent Control
+	rosws set starmac-ros-pkg https://bitbucket.org/bouffard/starmac-ros-pkg --hg
+	rosws update starmac-ros-pkg
+	roswtf starmac-ros-pkg/starmac_robots/simulated_quadrotor/launch/sim.launch
+
+
+##################################
+### exploring nodes
+##################################
+#nodes = processes
+rosnode --help
+rosnode list 
+rosnode info /rosout
+
+
+##################################
+### exploring topics/nodes/messages
+##################################
+rxgraph
+# list of nodes/topics in computation graph
+# also called the ROS runtime graph; peer-to-peer network over a loosely coupled communication infrastructure
+
+roslaunch simulated_quadrotor sim.launch show_plots:=false dummy_joystick:=false soft_joystick:=true 
+#roslaunch/rosrun are also part of the package/stack management toolset
+rosnode list 
+rosnode info `rosnode list`
+rxgraph
+
+rostopic list
+rostopic info /simflyer1/estimator/output
+^info^type
+rosmsg show `rostopic type /simflyer1/estimator/output`
+rostopic echo /simflyer1/estimator/output
+rostopic hz /simflyer1/estimator/output
+rostopic bw /simflyer1/estimator/output
+# rx'd bandwidth; if rostopic is lagging, or if there are connectivity problems, the reported bw will be lower than optimal.
+# rostopic is implemented in Python.
+
+#rostopic type /simflyer1/control_mode_attitude/cmd | rosmsg show
+#rostopic find flyer_controller/controller_cmd
+#rostopic find flyer_controller/controller_status
+#rostopic echo -n 1 /simflyer1/controller/status
+#rostopic echo -n 1 /simflyer1/controller/cmd
+
+#change mode to attitude
+rostopic echo -n 1 /simflyer1/controller/status
+rostopic list | grep cmd
+rostopic echo -n 1 /simflyer1/controller/cmd
+rostopic pub -1 /simflyer1/controller/cmd flyer_controller/controller_cmd "control_mode to_active attitude"
+rostopic echo -n 1 /simflyer1/controller/status
+rostopic echo /simflyer1/control_mode_attitude/output
+rostopic echo /simflyer1/estimator/output
+
+
+
+##################################
+### exploring services
+##################################
+# request and receive
+rosservice list
+roservice find ...
+roservice uri ...
+rosservice type ______ | rossrv show
+
+#the parameter service stores values in YAML for interprocess/internode communication
+rosparam list
+rosparam get /
+?????????????/
+#rosparam get background_r 
+#rosparam set background_r 150
+#rosparam dump and rosparam load can be used to store and restore global states
+
+##################################
+### Communication recap
+### # Topics: Asynchronous streaming
+### # Services: Synchronous RPC-style comm
+### # Parameter Server: Global, semi-persistent storage
+##################################
+
+
+##################################
+### visualizing data
+##################################
+rxplot /simflyer1/estimator/output/pose/pose/position/z, /simflyer1/teleop_flyer/operator_cmds/alt_cmd
+#pitch_cmd, yaw_rate_cmd, yaw_cmd
+rviz
+rxbag
+rxgraph
+
+
+
+
+Technologies:
+	http://www.ros.org/wiki/ROS/TCPROS
+	XML
+	YAML
+	
+
+References:
+http://mirror.umd.edu/roswiki/attachments/Documentation/ROScheatsheet.pdf
+http://www.ros.org/wiki/AllTutorials
+http://ai.stanford.edu/~ang/papers/icraoss09-ROS.pdf

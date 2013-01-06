@@ -1,0 +1,154 @@
+[Prereqs: completed ROS_Fuerte_install guide]
+
+
+1. Initialize ROS Workspace (see http://www.ros.org/doc/api/rosinstall/html/rosws_tutorial.html)
+	source /opt/ros/fuerte/setup.bash
+	rosws init ~/ros_workspace /opt/ros/fuerte
+	echo "source /home/ros/ros_workspace/setup.bash" >> ~/.bashrc
+	# comment/remove the line 'source /opt/ros/fuerte/setup.bash' in ~/.bashrc
+	source ~/.bashrc
+
+2. Verify ROS Workspace:
+	rosws info
+
+	Output should be :
+	workspace: /tmp/rosws_tutorial
+	ROS_ROOT: /opt/ros/fuerte/share/ros
+
+	 Localname                 S SCM  Version-Spec UID  (Spec) URI  (Spec) (https://...)
+	 ---------                 - ---- ------------ ----------- -------------------------
+	 /opt/ros/fuerte/stacks
+	 /opt/ros/fuerte/share
+	 /opt/ros/fuerte/share/ros
+
+3. Install dependencies: pr2_common pr2_mechanism pr2_controllers sbpl sbpl_lattice_planner
+	
+	sudo apt-get update && sudo apt-get --assume-yes install ros-fuerte-pr2-common ros-fuerte-pr2-mechanism ros-fuerte-pr2-controllers mercurial
+	
+	# ros-fuerte-sbpl cannot be found during the ros-summit-stack build process; so we install it manually here
+	roscd
+	rosws set sbpl "$(roslocate uri sbpl)" --$(roslocate vcs sbpl)
+	rosws update sbpl
+	source ~/.bashrc
+	rosdep update
+	rosmake sbpl
+	
+	roscd
+	rosws set sbpl_lattice_planner "$(roslocate uri sbpl_lattice_planner)" --$(roslocate vcs sbpl_lattice_planner)
+	rosws update sbpl_lattice_planner
+	source ~/.bashrc
+	rosdep update
+	rosmake sbpl_lattice_planner
+
+
+4. Install summit_sim
+
+  4.1 Checkout code
+	roscd
+	rosws set summit_sim "http://summit-ros-stack.googlecode.com/svn/trunk/trunk/summit_sim" --svn
+	rosws update summit_sim 
+	source ~/.bashrc
+
+  4.x Clean up summit_sim
+    #delete all CMakeCache.txt and cmake_install.txt files
+	find ~/ros_workspace/summit_sim -type f -name "CMakeCache.txt" -exec rm -fv {} \;
+	find ~/ros_workspace/summit_sim -type f -name "cmake_install.cmake" -exec rm -fv {} \;
+
+	# edit the Makefile of all packages of the summit_sim and edit the lines of the paths who start with svn or who reffers to electric by the correct path.
+	# /svn/svn_summit/branches/electric/summit/ -> /home/ros/ros_workspace/summit_sim/
+	# /opt/ros/electric/stacks/summit/ -> /home/ros/ros_workspace/summit_sim/
+	# /opt/ros/electric/stacks/summit_sim/ -> /home/ros/ros_workspace/summit_sim/
+	
+	find ~/ros_workspace/summit_sim -name "Makefile" -print -exec sed -i "s/\/svn\/svn_summit\/branches\/electric\/summit\//\/home\/ros\/ros_workspace\/summit_sim\//g" '{}' \;
+
+	find ~/ros_workspace/summit_sim -name "Makefile" -print -exec sed -i "s/\/opt\/ros\/electric\/stacks\/summit\//\/home\/ros\/ros_workspace\/summit_sim\//g" '{}' \;
+
+	find ~/ros_workspace/summit_sim -name "Makefile" -print -exec sed -i "s/\/opt\/ros\/electric\/stacks\/summit_sim\//\/home\/ros\/ros_workspace\/summit_sim\//g" '{}' \;
+
+	# [optional] verify that all makefiles have been modified
+	find ~/ros_workspace/summit_sim -iname 'Makefile' | xargs grep 'electric\|svn'
+	
+	
+  4.2 Initialize dependencies sources (if not done already)
+	sudo rosdep init
+	rosdep update
+
+  4.2 Build code 
+	#rosdep install summit_sim    # equivalent in previous ros versions to rosmake --rosdep-install)
+	roscd summit_sim
+	rosmake summit_sim 
+
+	Hopefully, you see the message:
+	
+	[ rosmake ] Built 88 packages with 0 failures.
+
+	
+4. Test environment with Summit Sim
+	In separate terminals, run the following commands:
+	roscore
+	roslaunch gazebo_worlds empty_world.launch
+	roslaunch summit_description summit.launch
+	
+5. IDE Install
+  5.1 Install Java 6 JDK
+	sudo apt-get --assume-yes install openjdk-6-jdk
+  5.2 Download and Install Netbeans 6.7.1 (http://www.netbeans.info/downloads/dev.php)
+	wget http://download.netbeans.org/netbeans/6.7.1/final/bundles/netbeans-6.7.1-ml-linux.sh && sudo netbeans-6.7.1-ml-linux.sh
+  5.3
+	Install Python plugins: Tools -> Plugins -> Select Python and JPython to be installed
+
+
+========================
+
+
+
+
+
+
+
+======== Notes (and things that didn't work) ======== 
+
+7. Set up a directory for source code builds:
+	in ~/.bashrc:
+		export ROS_PACKAGE_PATH=~/ros_workspace/stacks...
+	mkdir ~/ros_workspace/stacks
+	cd ~/ros_workspace/stacks
+	svn checkout http://summit-ros-stack.googlecode.com/svn/trunk/ summit-ros-stack-read-only
+	[ or to install only one package at a time: 
+	svn co http://summit-ros-stack.googlecode.com/svn/trunk/trunk/summit_sim/summit_description
+	or setup svn in NetBeans in Tools -> Options -> Miscellaneous -> Versioning -> Subversion]
+	
+	
+"ROS stores groups of packages in stacks, and it stores the stacks wherever you want. ROS will search for packages and stacks that are listed in the ROS_PACKAGE_PATH environmental variable.
+
+
+=========== Manual Install Script if there are further errors =========== 
+
+# note: this script has not been tested
+set -o errexit
+set -o verbose
+
+# rosdep init will return error if it has been run before; comment out if you have already initialized your 
+#sudo rosdep init
+for dep in "sbpl" "sbpl_lattice_planner"
+do
+  # if roscd returns an error message
+  if [ $(roscd $dep) ] ; then
+    # check out code
+    rosws set $dep "$(roslocate uri $dep)" --$(roslocate vcs $dep)
+    #update workspace
+    rosws update $dep
+    # re-source $ROS_WORKSPACE/setup.bash
+    source ~/.bashrc
+    if [rosdep check $dep != 'All system dependencies have been satisfied' ] ; then 
+      echo "There was a missing dependency for $dep. Run \'rosdep check $dep\' to see results."
+      break
+    fi
+    rosdep update
+    #rosdep install $dep
+    rosmake $dep
+  fi
+done
+
+
+============== END SCRIPT =================== 

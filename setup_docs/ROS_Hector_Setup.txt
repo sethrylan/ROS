@@ -1,0 +1,42 @@
+[Prereqs: completed ROS Electric on Ubuntu 11.10 install]
+
+
+###################################
+##### Install hector_quadrotor stack
+###################################
+
+rosws set hector http://tu-darmstadt-ros-pkg.googlecode.com/svn/branches/fuerte --svn
+rosws update hector
+. setup.bash
+rosmake hector_quadrotor_demo
+
+###################################
+##### run hector_quadrotor_demo
+###################################
+
+roslaunch hector_quadrotor_demo outdoor_flight_gazebo.launch
+
+#rosrun pr2_teleop teleop_pr2_keyboard
+
+rosrun hector_controller hector_control.py
+
+rosrun hector_controller hector_teleop.py
+
+
+
+
+# to launch UGV object
+Edit ~/ros_workspace/hector/hector_ugv_common/hector_ugv_description/urdf/hector_ugv_base.urdf.xacro
+Change line with $(find monstertruck_urdf)/hector to
+   <include filename="/home/ros/ros_workspace/hector/hector_ugv_common/hector_ugv_description/urdf/$(env ROBOT)_addons.urdf.xacro" />
+
+
+export ROBOT=hector1
+roslaunch hector_ugv_gazebo spawn_hector_ugv.launch ROBOT:=hector1
+
+rosrun gazebo spawn_model -file $ROS_WORKSPACE/hector/hector_ugv_common/hector_ugv_description/urdf/hector_ugv_base.urdf.xacro -urdf -z 1 -model my_ugv
+
+rosrun gazebo spawn_model -file $ROS_WORKSPACE/hector/hector_quadrotor/hector_quadrotor_urdf/urdf/quadrotor_with_cam.urdf.xacro -urdf -z 1 -model my_quad
+
+
+rosservice call /empty_world_server/spawn_urdf_model '{model_name: "test_quadrotor", model_xml: "/home/ros/ros_workspace/hector/hector_quadrotor/hector_quadrotor_urdf/urdf/quadrotor_with_cam.urdf.xacro", robot_namespace: "/foo", initial_pose: {position: {x: 0, y: 0, z: 0}, orientation: {x: 0, y: 0, z: 0, w: 1}}, reference_frame: "world"'

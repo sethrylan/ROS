@@ -1,0 +1,22 @@
+[Prereqs: completed ROS_Fuerte_install guide, completed ROS_Summit_install for other dependencies]
+
+#https://alliance.seas.upenn.edu/~meam620/wiki/index.php?n=Roslab.ErraticRobot
+# the robot itself: http://www.umiacs.umd.edu/~cteo/umd-erratic-ros-data/man_era_rev_h.pdf
+
+# 1. install erratic_robot stack
+roscd
+rosws set erratic_robot https://ua-ros-pkg.googlecode.com/svn/stacks/erratic_robot/trunk --svn
+rosws update erratic_robot
+. setup.bash
+rosmake erratic_robot
+
+# 2. launch gazebo
+roslanunch gazebo_worlds empty_world.launch
+roslaunch erratic_navigation_apps demo_2dnav_empty_map.launch
+rosrun erratic_teleop erratic_keyboard_teleop
+
+
+rostopic echo -n 1 /odom
+#/odom (nav_msgs/Odometry)
+#/cmd_speed (geometry_msgs/Twist)
+

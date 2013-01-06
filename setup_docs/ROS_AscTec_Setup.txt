@@ -1,0 +1,190 @@
+[Prereqs: completed ROS_Fuerte_install guide, completed ROS_Summit_install for other dependencies]
+
+#####################################
+#####################################
+# 1. install main drivers
+#####################################
+#####################################
+
+
+sudo apt-get install git-core
+
+rosws set mav_tools https://github.com/ccny-ros-pkg/mav_tools.git --git
+ 
+rosws update mav_tools
+
+rosws set asctec_drivers https://github.com/ccny-ros-pkg/asctec_drivers.git --git
+
+rosws update asctec_drivers
+
+#also may need
+#https://github.com/ccny-ros-pkg/imu_tools
+#https://github.com/ccny-ros-pkg/scan_tools
+#https://github.com/ccny-ros-pkg/misc/blob/master/ccny-ros-pkg.rosinstall : imu_tools, phidgets_imu, ccny_vision, ccny_drivers
+
+. setup.bash
+
+rosmake mav_tools
+
+rosmake asctec_drivers
+
+
+#####################################
+#####################################
+# 2. set up for gazebo
+# see http://answers.ros.org/question/12042/how-can-i-simulate-an-uav-on-gazebo/
+# and http://answers.ros.org/question/11208/pelican-model-in-gazebo/
+# and http://answers.ros.org/question/12430/modelling-sensorsimu-in-gazebo/
+#####################################
+#####################################
+
+
+pelican.xml:
+
+  <link name="base_link">
+    <inertial>
+      <mass value="10.0" />
+      <origin xyz="0 0 0" />
+      <inertia  ixx="1" ixy="0.000"  ixz="0.0"  iyy="1"  iyz="0.0"  izz="1" />
+    </inertial>
+    <visual>
+      <origin xyz="0.0 0.0 0.0" rpy="1.57 0.0 3.1415"/>
+      <geometry>
+        <mesh filename="package://pelican_urdf/data/pelican.stl" 
+              scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="blue">
+        <color rgba="0.4 0.4 0.5 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.0 0.0 0.0" rpy="1.57 0.0 3.1415"/>
+      <geometry>
+        <mesh filename="package://pelican_urdf/data/pelican.stl" 
+              scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <gazebo reference="base_link">
+      <kp>1000000000.0</kp>
+      <kd>1.0</kd>
+    <material>Gazebo/Black</material>
+    <turnGravityOff>true</turnGravityOff>
+  </gazebo>
+  
+  
+  
+roscore
+roslaunch gazebo_worlds empty_world.launch
+#roslaunch pelican_urdfs pelican.launch
+rosrun gazebo spawn_model -file $ROS_WORKSPACE/asctec_drivers/pelican_urdf/data/pelican.xml -urdf -z 1 -model my_pelican
+
+
+#####################################
+#####################################
+# Alternative: Use flyer_sim and starmac_ros_pkg
+#####################################
+#####################################
+
+#####################################
+#install dependencies
+#####################################
+
+
+sudo apt-get install ros-fuerte-roshpit ros-fuerte-openni-camera
+
+#####################################
+#install ethzasl_sensor_fusion dependency for asctec_mav_framekwork
+#####################################
+roscd
+rosws set ethzasl_sensor_fusion --git git://github.com/ethz-asl/ethzasl_sensor_fusion.git
+rosws update ethzasl_sensor_fusion
+. setup.bash
+
+sed -i "s/<depend package=\"eigen\"\/>/<rosdep name=\"eigen\"\/>/g" ~/ros_workspace/ethzasl_sensor_fusion/ssf_core/manifest.xml;
+
+# add to top of CMakeLists.txt files:
+# see http://ros.org/wiki/fuerte/Migration
+find_package(Eigen REQUIRED)
+include_directories(${EIGEN_INCLUDE_DIRS})
+add_definitions(${EIGEN_DEFINITIONS})
+
+rosmake sensor_fusion_comm && rosmake ssf_core && rosmake ssf_updates
+
+#####################################
+#install asctec_mav_framework
+#use pbouffard's fork (https://github.com/pbouffard/asctec_mav_framework) for nodletized fcu.launch files
+#####################################
+
+################## directions for trunk : 2012/07/19
+#rosws set asctec_mav_framework --git https://github.com/ethz-asl/asctec_mav_framework
+sed -i "s/<depend package=\"eigen\"\/>/<rosdep name=\"eigen\"\/>/g" ~/ros_workspace/asctec_mav_framework/asctec_hl_gps/manifest.xml;
+
+#add to top of CMakeLists.txt:
+#Eigen required    
+find_package(Eigen REQUIRED)
+include_directories(${EIGEN_INCLUDE_DIRS})
+
+#???? add to asctec_hl_gps/manifest.xml; see http://ros.org/wiki/eigen#Fuerte
+ <export>
+    <cpp cflags="`pkg-config --cflags eigen3` -I${prefix}/include `rosboost-cfg --cflags`" 
+         lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lplanning_models"/>
+  </export>
+
+. setup.bash
+
+#rosmake asctec_mav_framework - will fail due to missing libboost linkage
+#todo; can fix this with directions on http://ros.org/wiki/fuerte/Migration#Errors_linking_boost_.28e.g._with_Boost_signals_or_thread.29
+rosmake asctec_hl_interface asctec_hl_firmware asctec_hl_comm
+
+################## directions for pbouffard fork
+rosws set asctec_mav_framework --git https://github.com/pbouffard/asctec_mav_framework
+rosws update asctec_mav_framework
+. setup.bash
+rosmake asctec_mav_framework
+
+
+#####################################
+#install starmac_ros_pkg
+# see http://www.eecs.berkeley.edu/~tomlin/papers/conferences/hrwdjt04_dasc.pdf
+# see http://hybrid.eecs.berkeley.edu/~bouffard/pubs/brockers_etal_spie_postprint.pdf
+#####################################
+
+rosws set starmac-ros-pkg https://bitbucket.org/bouffard/starmac-ros-pkg --hg
+rosws update starmac-ros-pkg 
+. setup.bash
+rosmake starmac_common && rosmake starmac_demos && rosmake starmac_flyer && rosmake starmac_robots && rosmake starmac_sensors && rosmake starmac_ground
+
+
+#####################################
+#run flyer_sim
+#####################################
+
+# from http://www.ros.org/wiki/starmac-ros-pkg/Tutorials/First%20Flight
+export FLYER_NAME=my_flyer
+export VICON_BRIDGE_HOSTNAME=localhost
+roscore
+#roslaunch flyer_common bringup_sim.launch show_plots:=false
+roslaunch simulated_quadrotor sim.launch
+roslaunch simulated_quadrotor sim.launch show_plots:=false dummy_joystick:=false soft_joystick:=true
+
+#The simulator launch file will bring up a runtime_monitor window, a rviz window and a rxconsole window.
+#runtime_monitor package
+
+rostopic echo -n 1 /simflyer1/controller/status
+
+rostopic type /simflyer1/control_mode_attitude/cmd | rosmsg show
+
+#soft joystick outputs sensor_msgs/Joy messages like a regular joy_node
+
+
+
+
+
+#todo: quat_to_ypr.py in the starmac_tools package (starmac_common stack).
+#todo: hector @ http://www.ros.org/wiki/tu-darmstadt-ros-pkg
+
+#starmac-ros-pkg hosts ROS stacks used for flying quadrotors. This software aims to provide much of the common functionality required for experimentation on small quadrotor UAV platforms. This package is part of the STARMAC project at the Hybrid Systems Lab, EECS, UC Berkeley http://hybrid.eecs.berkeley.edu
+
+# The simulated quadrotor node generates an odom message that is emulated based on a mathematical model. It's by no means a simulation of flight. It's made just to test out control modes, etc.
