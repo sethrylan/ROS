@@ -25,7 +25,7 @@ rospy.set_param('delay', 0.001)
 
 pub = rospy.Publisher(cmd_topic, Twist)
 
-def odometry_callback(odom_data):
+def odometryCb(odom_data):
 	pose = [odom_data.pose.pose.position.x,odom_data.pose.pose.position.y,odom_data.pose.pose.position.z]
 
         # rospy.wait_for_message does not work after rospy.spin is started, so use a param to communicate pose to the waypoint control
@@ -35,15 +35,6 @@ def odometry_callback(odom_data):
         goal = rospy.get_param('goal')
         delay = rospy.get_param('delay')
         global previous_error, integral
-
-        
-        ## calculate line between current pose and goal
-
-        ## calculate difference between current bearing and slope of goal line
-
-        ## pitch (theta) :: distance to goal
-        ## yaw (psi) :: bearing deviation
-        ## z :: as-is
 
         # initialize previous_error for first pass
 	for i in range(3):
@@ -74,7 +65,7 @@ def odometry_callback(odom_data):
 if __name__ == '__main__':
 	try:
         	rospy.init_node('quadrotor_control', anonymous=True)
-        	rospy.Subscriber(global_pose_topic, Odometry, odometry_callback, queue_size=2)
+        	rospy.Subscriber(global_pose_topic, Odometry, odometryCb, queue_size=2)
         	rospy.spin()
 	except rospy.ROSInterruptException: pass
 
