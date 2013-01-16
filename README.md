@@ -1,6 +1,8 @@
 ROS
 ===
 
+A PID controller for gazebo quadrotor simulations. Includes a controller for manipulating gains, goal-state and delay.
+
 ## Install ROS Fuerte
 See ROS_Fuerte_Install.txt document.
 
